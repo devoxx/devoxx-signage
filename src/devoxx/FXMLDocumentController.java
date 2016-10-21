@@ -305,19 +305,25 @@ public class FXMLDocumentController implements Initializable {
          * moving the labels for the session and room and reducing the font size
          * of the room number
          */
+        sessionLbl.setVisible(true);
+        roomLbl.setVisible(true);
         
-        if (room.startsWith("BOF")) {
+        if (room.toLowerCase().startsWith("bof")) {
             roomNumber.setFont(Font.font("Arial", FontWeight.BOLD, 120));
-            roomNumber.setTranslateX(-160);
+            roomNumber.setTranslateX(-230);
             roomNumber.setTranslateY(30);
-            sessionLbl.setTranslateX(-150);
-            roomLbl.setTranslateX(-150);
+            sessionLbl.setVisible(false);
+            roomLbl.setVisible(false);
         } else if (room.equals("10")) {
             roomNumber.setTranslateX(-70);
             sessionLbl.setTranslateX(-70);
             roomLbl.setTranslateX(-70);
         } else {
             roomNumber.setFont(Font.font("Arial", FontWeight.BOLD, 195));
+            roomNumber.setTranslateX(0);
+            roomNumber.setTranslateY(0);
+            sessionLbl.setTranslateX(0);
+            roomLbl.setTranslateX(0);
         }
 
         roomNumber.setText(room);
@@ -336,7 +342,7 @@ public class FXMLDocumentController implements Initializable {
         } else if (room.length() > 4) {
             // Shows the "Auditorium" room label for Devoxx UK
             sessionLbl.setText(room);
-            sessionLbl.setTranslateX(-60);
+            sessionLbl.setTranslateX(-160);
             sessionLbl.setTranslateY(20);
             sessionLbl.setFont(Font.font("Arial", FontWeight.BOLD, 120));
             roomNumber.setText("");

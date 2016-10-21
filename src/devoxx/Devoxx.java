@@ -351,8 +351,10 @@ public class Devoxx extends Application {
     private void setRoom(int roomNumber) {
 
         String roomId;
-        if (roomNumber == 0) {
-            roomId = "aud_room";
+        if (roomNumber == 20) {
+            roomId = "bof1";
+        } else if (roomNumber == 21) {
+            roomId = "bof2";
         } else {
             roomId = "room" + roomNumber;
         }
@@ -379,9 +381,6 @@ public class Devoxx extends Application {
         KeyCode code = keyEvent.getCode();
         if (null != code) {
             switch (code) {
-                case DIGIT0:
-                    setRoom(0);
-                    break;
                 case DIGIT1:
                     setRoom(1);
                     break;
@@ -408,6 +407,15 @@ public class Devoxx extends Application {
                     break;
                 case DIGIT9:
                     setRoom(9);
+                    break;
+                case DIGIT0:
+                    setRoom(10);
+                    break;                    
+                case A:
+                    setRoom(20);
+                    break;
+                case B:
+                    setRoom(21);
                     break;
                 case Q:
                     System.exit(0);

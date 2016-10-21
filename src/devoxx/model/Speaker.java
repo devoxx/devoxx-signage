@@ -77,14 +77,14 @@ public class Speaker {
             LOGGER.warning("Trying to fix this");
             downloadURL = downloadURL.replace("\\", "/");
         }
-
+                
         try {
             final URL imageURL = new URL(downloadURL);
 
             if (!Files.exists(Paths.get(cache), LinkOption.NOFOLLOW_LINKS)) {
                 Files.createDirectory(Paths.get(cache));
             }
-
+            
             final URLConnection connection = imageURL.openConnection();
             connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11");
 
@@ -108,6 +108,7 @@ public class Speaker {
      * @return
      */
     public ImageView getPhoto() {
+        
         ImageView photo;
 
         String photoFileName = cache + File.separatorChar + uuid + ".dat";
