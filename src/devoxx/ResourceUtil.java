@@ -21,7 +21,7 @@ public class ResourceUtil {
     public static boolean download(String url, String fileName)
         throws IOException {
         InputStream in;
-
+        System.out.println("I have to download "+url);
         try {
             final URL urlObj = new URL(url);
             HttpURLConnection connection = (HttpURLConnection) urlObj.openConnection();
@@ -44,6 +44,7 @@ public class ResourceUtil {
             return true;
         } catch (IOException ex) {
             System.out.println("INTERNET IS DOWN, USING CACHED DATA.  :)");
+            ex.printStackTrace();
         }
         return false;
     }

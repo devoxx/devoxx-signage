@@ -73,7 +73,7 @@ public class FXMLDocumentController implements Initializable {
     Rectangle debugBox;
             
     Font lightFont, qTypeBig, qTypeSml, titleThin, gothambookBig,
-        gothambookMed, gothambookSml, gothambookTiny, titleHuge, 
+        gothambookMed, gothambookSml, gothambookTiny, 
         titleBig, timeFont, roomNumberFont, arialSmall;
     
     @FXML Circle networkCircle;
@@ -100,7 +100,8 @@ public class FXMLDocumentController implements Initializable {
         networkCircle.visibleProperty().bind(offline);
         
         // Load fonts 
-        lightFont = Font.loadFont(Devoxx.class.getResource(FONTS_GOTHAMBOOK_WEBFONT_TTF).toExternalForm(), 20);
+        lightFont = Font.loadFont( Devoxx.class.getResource(FONTS_GOTHAMBOOK_WEBFONT_TTF).toExternalForm(), 20);
+
         titleThin = Font.loadFont(Devoxx.class.getResource(FONTS_GOTHAM_EXLIGHT_WEBFONT_TTF).toExternalForm(), 40);
         qTypeBig = Font.loadFont(Devoxx.class.getResource(FONTS_Q_TYPE_OT_SEEXT_MEDIUMOTF).toExternalForm(), 30);
         qTypeSml = Font.loadFont(Devoxx.class.getResource(FONTS_Q_TYPE_OT_SEEXT_MEDIUMOTF).toExternalForm(), 23);
@@ -108,7 +109,6 @@ public class FXMLDocumentController implements Initializable {
         gothambookMed = Font.loadFont(Devoxx.class.getResource(FONTS_GOTHAMBOOK_WEBFONT_TTF).toExternalForm(), 28);
         gothambookSml = Font.loadFont(Devoxx.class.getResource(FONTS_GOTHAMBOOK_WEBFONT_TTF).toExternalForm(), 25);
         gothambookTiny = Font.loadFont(Devoxx.class.getResource(FONTS_GOTHAMBOOK_WEBFONT_TTF).toExternalForm(), 18);
-        titleHuge = Font.loadFont(Devoxx.class.getResource(FONTS_GILL_SANSTTC).toExternalForm(), 83);
         arialSmall = Font.font(FONTS_ARIAL, FontWeight.LIGHT, 18);
         setFonts();        
     }

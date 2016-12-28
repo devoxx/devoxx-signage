@@ -7,7 +7,6 @@ import devoxx.model.Speaker;
 import devoxx.model.Presentation;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -29,6 +28,10 @@ import javafx.stage.StageStyle;
 import javafx.util.Duration;
 
 import static javafx.animation.Animation.INDEFINITE;
+import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.concurrent.Task;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 
@@ -60,6 +63,8 @@ public class Devoxx extends Application {
     private Presentation firstPresentation;
     private Presentation secondPresentation;
     private Presentation thirdPresentation;
+    
+    private BooleanProperty updating = new SimpleBooleanProperty();
 
     /**
      * Entry point for the JavaFX application life cycle.
@@ -89,6 +94,13 @@ public class Devoxx extends Application {
         // Start data and JavaFX screen refresh timers
         startDataRefreshTimer();
         startScreenTimer();
+        updating.addListener(e -> {
+            System.out.println("Updating changed, is now "+updating.get());
+            if (!updating.get()) {
+                System.out.println("hide debug!");
+                screenController.hideDebug();
+            }
+        });
     }
 
     /**
@@ -294,13 +306,43 @@ public class Devoxx extends Application {
         return roomNumber;
     }
 
+    /**
+     * This needs to be called on the FX App thread.
+     * When we update the data, we set the updating property to true.
+     * We create a task on a new thread, and start it.
+     * When the task succeeds, we set the updating property to false.
+     * As a consequence, toggling the update property happens on the FX App thread, 
+     * while fetching the data happens on another thread.
+     * Note that we need to update the display on the FX App thread, hence
+     * th call to Platform.runLater()
+     */
     private void updateData() {
-        if (dataFetcher.updateData()) {
-            screenController.setOnline();
-            updateDisplay();
-        } else {
-            screenController.setOffline();
+        if (!Platform.isFxApplicationThread()) {
+            System.err.println("This should never happen: updateData is called from a non-FX Thread. See stack trace below:");
+            Thread.dumpStack();
+            return;
         }
+        updating.set(true);
+        Task task = new Task() {
+            @Override
+            protected Object call() throws Exception {
+                try {
+
+                    if (dataFetcher.updateData()) {
+                        screenController.setOnline();
+                        Platform.runLater(() -> updateDisplay());
+                    } else {
+                        screenController.setOffline();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                return null;
+            }
+        };
+        Thread t = new Thread(task);
+        task.setOnSucceeded(e -> updating.set(false));
+        t.start();
     }
 
     /**
@@ -386,7 +428,7 @@ public class Devoxx extends Application {
 
         // TODO How to force a screen refresh before we continue, different thread?
         screenController.showDebugMsg("Fetching data room " + roomNumber);        
-              
+              System.out.println("SHOW debug!");
         String roomId;
         if (roomNumber == 0) {
             roomId = "aud_room";
@@ -406,7 +448,7 @@ public class Devoxx extends Application {
 
         updateData();
 
-        screenController.hideDebug();
+       // screenController.hideDebug();
        
     }
 
@@ -493,7 +535,7 @@ public class Devoxx extends Application {
             }
         }
         
-        screenController.hideDebug();
+     //   screenController.hideDebug();
     }
 
     /**

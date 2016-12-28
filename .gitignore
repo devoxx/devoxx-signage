@@ -1,5 +1,6 @@
 /nbproject/private/
 /build/
 /dist/
+.gradle/
 schedule*.json
 speakers.json
