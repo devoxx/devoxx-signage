@@ -3,3 +3,6 @@
 /dist/
 schedule*.json
 speakers.json
+/currentRoom.txt
+/speaker.json
+/devoxx-signage.iml

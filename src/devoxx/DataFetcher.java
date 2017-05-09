@@ -130,10 +130,10 @@ public class DataFetcher {
 
         for (String day : DAYS) {
             try {
-                LOGGER.log(Level.FINER, "Retrieving data for {0}", day);
+                LOGGER.log(Level.INFO, "Retrieving data for {0}", day);
                 String dataUrl = devoxxHost + "rooms/" + roomId + "/" + day;
                 
-                LOGGER.log(Level.FINEST, "{0} URL = {1}", new Object[]{day, dataUrl});
+                LOGGER.log(Level.INFO, "{0} URL = {1}", new Object[]{day, dataUrl});
                 String jsonString = "schedule-" + day + ".json";
                 
                 ResourceUtil.download(dataUrl, jsonString);
@@ -215,10 +215,10 @@ public class DataFetcher {
         try(Reader reader = new InputStreamReader(in, StandardCharsets.UTF_8)){
             speakers = gson.fromJson(reader, Speaker[].class);
         }
-        
+
         // Populate the speaker map
         for (Speaker speaker : speakers) {
             speakerMap.put(speaker.uuid, speaker);
-        }        
+        }
     }
 }

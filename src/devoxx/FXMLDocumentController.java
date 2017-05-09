@@ -3,19 +3,8 @@
  */
 package devoxx;
 
-import devoxx.Devoxx;
-import devoxx.model.Speaker;
 import devoxx.model.Presentation;
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
-import java.net.URL;
-import java.net.UnknownHostException;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Enumeration;
-import java.util.ResourceBundle;
+import devoxx.model.Speaker;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.beans.property.BooleanProperty;
@@ -29,9 +18,16 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Circle;
+import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.util.Duration;
+
+import java.net.*;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Enumeration;
+import java.util.ResourceBundle;
 
 /**
  *
@@ -66,10 +62,13 @@ public class FXMLDocumentController implements Initializable {
     ImageView speakerImg1, speakerImg2, speakerImg3;
 
     @FXML
-    Label speakerName1, speakerName2, speakerName3, ipaddress;
+    Label speakerName1, speakerName2, speakerName3, ipaddress, debugLabel;
+
+    @FXML
+    Rectangle debugBox;
 
     Font lightFont, qTypeBig, qTypeSml, titleThin, gothambookBig,
-        gothambookMed, gothambookSml, gothambookTiny, titleHuge, 
+        gothambookMed, gothambookSml, gothambookTiny,
         titleBig, timeFont, roomNumberFont, arialSmall;
     
     @FXML Circle networkCircle;
@@ -96,7 +95,8 @@ public class FXMLDocumentController implements Initializable {
         networkCircle.visibleProperty().bind(offline);
         
         // Load fonts 
-        lightFont = Font.loadFont(Devoxx.class.getResource(FONTS_GOTHAMBOOK_WEBFONT_TTF).toExternalForm(), 20);
+        lightFont = Font.loadFont( Devoxx.class.getResource(FONTS_GOTHAMBOOK_WEBFONT_TTF).toExternalForm(), 20);
+
         titleThin = Font.loadFont(Devoxx.class.getResource(FONTS_GOTHAM_EXLIGHT_WEBFONT_TTF).toExternalForm(), 40);
         qTypeBig = Font.loadFont(Devoxx.class.getResource(FONTS_Q_TYPE_OT_SEEXT_MEDIUMOTF).toExternalForm(), 30);
         qTypeSml = Font.loadFont(Devoxx.class.getResource(FONTS_Q_TYPE_OT_SEEXT_MEDIUMOTF).toExternalForm(), 23);
@@ -104,7 +104,6 @@ public class FXMLDocumentController implements Initializable {
         gothambookMed = Font.loadFont(Devoxx.class.getResource(FONTS_GOTHAMBOOK_WEBFONT_TTF).toExternalForm(), 28);
         gothambookSml = Font.loadFont(Devoxx.class.getResource(FONTS_GOTHAMBOOK_WEBFONT_TTF).toExternalForm(), 25);
         gothambookTiny = Font.loadFont(Devoxx.class.getResource(FONTS_GOTHAMBOOK_WEBFONT_TTF).toExternalForm(), 18);
-        titleHuge = Font.loadFont(Devoxx.class.getResource(FONTS_GILL_SANSTTC).toExternalForm(), 83);
         arialSmall = Font.font(FONTS_ARIAL, FontWeight.LIGHT, 18);
         setFonts();        
     }
@@ -155,7 +154,17 @@ public class FXMLDocumentController implements Initializable {
         time.setFont(Font.font(FONTS_ARIAL, FontWeight.BOLD, 90));
     }
     
-    
+    public void showDebugMsg(String msg) {
+        debugBox.setVisible(true);
+        debugLabel.setVisible(true);
+        debugLabel.setText(msg);
+    }
+
+    public void hideDebug() {
+        debugBox.setVisible(false);
+        debugLabel.setVisible(false);
+    }
+
     /**
      * For debugging reasons show the public IP address of the PI.
      * @return public IP
@@ -321,26 +330,31 @@ public class FXMLDocumentController implements Initializable {
         }
 
         roomNumber.setText(room);
+        System.out.println("Room:"+room);
         
         if (room.equalsIgnoreCase("A") || 
             room.equalsIgnoreCase("B") || 
             room.equalsIgnoreCase("C") || 
             room.equalsIgnoreCase("D")) {
+            sessionLbl.setFont(Font.font("Arial", FontWeight.BOLD, 80));
             sessionLbl.setText("SESSION");
             sessionLbl.setTranslateX(10);
             sessionLbl.setTranslateY(0);
-            sessionLbl.setFont(Font.font("Arial", FontWeight.BOLD, 80));
             roomLbl.setText("ROOM");
             roomLbl.setTranslateX(0);
             roomNumber.setTranslateX(0);
-        } else if (room.length() > 4) {
-            // Shows the "Auditorium" room label for Devoxx UK
+        } else {
+            sessionLbl.setFont(Font.font("Arial", FontWeight.BOLD, 140));
             sessionLbl.setText(room);
-            sessionLbl.setTranslateX(-60);
             sessionLbl.setTranslateY(20);
-            sessionLbl.setFont(Font.font("Arial", FontWeight.BOLD, 120));
             roomNumber.setText("");
-            roomLbl.setText("");
+            roomLbl.setText("");            
+        }
+        
+        if (room.equalsIgnoreCase("gallery hall")) {
+            sessionLbl.setTranslateX(-200);
+        } else if (room.equalsIgnoreCase("auditorium")) {
+            sessionLbl.setTranslateX(-180);            
         } 
     }
 }

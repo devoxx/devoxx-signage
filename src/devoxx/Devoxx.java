@@ -3,30 +3,34 @@
  */
 package devoxx;
 
-import devoxx.model.Speaker;
 import devoxx.model.Presentation;
-import java.io.File;
-import java.io.IOException;
+import devoxx.model.Speaker;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.concurrent.Task;
+import javafx.event.ActionEvent;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+import javafx.stage.Stage;
+import javafx.stage.StageStyle;
+import javafx.util.Duration;
+
+import java.io.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
-import javafx.application.Application;
-import javafx.event.ActionEvent;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.stage.Stage;
-import javafx.stage.StageStyle;
-import javafx.util.Duration;
 
 import static javafx.animation.Animation.INDEFINITE;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
 
 /**
  * The main Devoxx class.
@@ -38,6 +42,8 @@ public class Devoxx extends Application {
 
     private final static Logger LOGGER = Logger.getLogger(Devoxx.class.getName());
     private final static ConsoleHandler CONSOLDE_HANDLER = new ConsoleHandler();
+
+    private static final String CURRENT_ROOMTXT = "currentRoom.txt";
 
     private static final int FIVE_MINUTES = 5;
     private static final int HALF_HOUR = 30;
@@ -51,9 +57,8 @@ public class Devoxx extends Application {
     private final List<Presentation> newPresentations = new ArrayList<>();
     private List<Presentation> presentations;
     private Presentation currentPresentation = null;
-    private Presentation firstPresentation;
-    private Presentation secondPresentation;
-    private Presentation thirdPresentation;
+
+    private BooleanProperty updating = new SimpleBooleanProperty();
 
     /**
      * Entry point for the JavaFX application life cycle.
@@ -65,7 +70,7 @@ public class Devoxx extends Application {
     public void start(final Stage stage) throws Exception {
 
         // Get property values
-        final String roomId = getRoomFromJVMParam();
+        final String roomId = getRoomFromSystem();
         final String propertiesFile = getPropertiesFileFromJVMParam();
 
         // Print configuration info to std out for debugging
@@ -83,6 +88,13 @@ public class Devoxx extends Application {
         // Start data and JavaFX screen refresh timers
         startDataRefreshTimer();
         startScreenTimer();
+        updating.addListener(e -> {
+            System.out.println("Updating changed, is now "+updating.get());
+            if (!updating.get()) {
+                System.out.println("hide debug!");
+                screenController.hideDebug();
+            }
+        });
     }
 
     /**
@@ -105,15 +117,41 @@ public class Devoxx extends Application {
      *
      * @return the room ID
      */
-    private String getRoomFromJVMParam() {
-        List<String> parameters = getParameters().getRaw();
+    private String getRoomFromSystem() {
+        String room = null;
 
-        final String room = parameters.isEmpty() ? null : getParameters().getRaw().get(0).toLowerCase();
-        if (room == null || room.isEmpty()) {
-            System.out.println("Please specify a room to display");
+        final File file = new File(CURRENT_ROOMTXT);
+        if (!file.exists()) {
+
+            // Current room text file doesn't exist, lets get it from property params
+            List<String> parameters = getParameters().getRaw();
+
+            room = parameters.isEmpty() ? null : getParameters().getRaw().get(0).toLowerCase();
+            if (room == null || room.isEmpty()) {
+                System.out.println("Please specify a room to display");
+                System.exit(1);
+            }
+        } else {
+            // Lets get the room id from the local current room text file
+            try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+                room = br.readLine();
+            } catch(IOException e) {
+                System.out.println("Problems reading currentRoom.txt file");
+                System.exit(1);
+            }
+        }
+
+        return room;
+    }
+
+    private void writeRoomToSystem(String room) {
+        try(PrintWriter out = new PrintWriter(CURRENT_ROOMTXT)) {
+            out.println( room );
+        } catch(IOException e) {
+            System.out.println(e);
+            System.out.println("Problems writing to currentRoom.txt file");
             System.exit(1);
         }
-        return room;
     }
 
     /**
@@ -157,6 +195,8 @@ public class Devoxx extends Application {
         stage.show();
 
         screenController.setRoom(roomName);
+
+        screenController.hideDebug();
     }
 
     /**
@@ -174,7 +214,7 @@ public class Devoxx extends Application {
     }
 
     /**
-     * Use a Timeline to periodically check for any updates to the published
+     * Use a Time line to periodically check for any updates to the published
      * data in case of last minute changes
      */
     private void startDataRefreshTimer() {
@@ -217,56 +257,98 @@ public class Devoxx extends Application {
      * If you use this code for a venue that uses different naming for the rooms
      * you will need to change this.
      *
-     * Devoxx BE uses rooms with a single digit number and two BOF rooms. Devoxx
-     * UK uses room letters.
+     * Devoxx BE uses rooms with a single digit number and two BOF rooms. 
+     * Devoxx UK 2017 uses room letters and two full names : Gallery and Auditorium
      */
     private String getRoomName(String room) {
-        String roomNumber = "";
+        String roomName = "";
 
         if (controlProperties.isDevoxxBelgium()) {
             if (room.startsWith("room")) {
-                roomNumber = room.substring("room".length());
+                roomName = room.substring("room".length());
             } else if (room.startsWith("bof")) {
-                roomNumber = "BOF" + room.substring("bof".length());
+                roomName = "BOF" + room.substring("bof".length());
             } else {
                 LOGGER.severe("Room name not recognised (must be roomX or bofX)");
                 System.exit(4);
             }
         } else if (controlProperties.isDevoxxUK()) {
+            // Valid UK room names :  
+            // room1 = A
+            // room2 = B
+            // room3 = C
+            // room4 = D
+            // a_gallery_hall = Gallery Hall (shortcut 5)
+            // aud_room = Auditorium (shortcut 6)
             if (room.startsWith("room")) {
                 switch (room.substring("room".length())) {
                     case "1":
-                        roomNumber = "A";
+                        roomName = "A";
                         break;
 
                     case "2":
-                        roomNumber = "B";
+                        roomName = "B";
                         break;
 
                     case "3":
-                        roomNumber = "C";
+                        roomName = "C";
                         break;
 
-                    default:
-                        roomNumber = "D";
+                    case "4":
+                        roomName = "D";
+                        break;
                 }
-            } else {
-                roomNumber = "Auditorium";
+            } else if (room.equalsIgnoreCase("a_gallery_hall")) {
+                roomName = "Gallery Hall";
+            } else if (room.equalsIgnoreCase("aud_room")) {
+                roomName = "Auditorium";
             }
+            
+            LOGGER.info("Room : " + roomName);
         } else {
             LOGGER.severe("Don't know which Devoxx this is!!");
             System.exit(4);
         }
-        return roomNumber;
+        return roomName;
     }
 
+    /**
+     * This needs to be called on the FX App thread.
+     * When we update the data, we set the updating property to true.
+     * We create a task on a new thread, and start it.
+     * When the task succeeds, we set the updating property to false.
+     * As a consequence, toggling the update property happens on the FX App thread,
+     * while fetching the data happens on another thread.
+     * Note that we need to update the display on the FX App thread, hence
+     * th call to Platform.runLater()
+     */
     private void updateData() {
-        if (dataFetcher.updateData()) {
-            screenController.setOnline();
-            updateDisplay();
-        } else {
-            screenController.setOffline();
+        if (!Platform.isFxApplicationThread()) {
+            System.err.println("This should never happen: updateData is called from a non-FX Thread. See stack trace below:");
+            Thread.dumpStack();
+            return;
         }
+        updating.set(true);
+        Task task = new Task() {
+            @Override
+            protected Object call() throws Exception {
+                try {
+
+                    if (dataFetcher.updateData()) {
+                        screenController.setOnline();
+                        Platform.runLater(() -> updateDisplay());
+                    } else {
+                        screenController.setOffline();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                return null;
+            }
+        };
+        Thread t = new Thread(task);
+        task.setOnSucceeded(e -> updating.set(false));
+        t.start();
     }
 
     /**
@@ -299,9 +381,9 @@ public class Devoxx extends Application {
             }
         }
 
-        firstPresentation = newPresentations.size() >= 1 ? newPresentations.get(0) : null;
-        secondPresentation = newPresentations.size() >= 2 ? newPresentations.get(1) : null;
-        thirdPresentation = newPresentations.size() >= 3 ? newPresentations.get(2) : null;
+        Presentation firstPresentation = newPresentations.size() >= 1 ? newPresentations.get(0) : null;
+        Presentation secondPresentation = newPresentations.size() >= 2 ? newPresentations.get(1) : null;
+        Presentation thirdPresentation = newPresentations.size() >= 3 ? newPresentations.get(2) : null;
         LOGGER.log(Level.FINE, "Screen update @ ({0})", now);
 
         if (currentPresentation != firstPresentation) {
@@ -328,7 +410,7 @@ public class Devoxx extends Application {
         LOGGER.log(Level.FINER, "Recreating speaker cache at {0}", imageCache);
 
         final File file = new File(imageCache);
-        if (file.isDirectory()) {
+        if (file.isDirectory() && file.listFiles() != null) {
 
             int totalCacheFiles = file.listFiles().length;
             for (File cacheFile : file.listFiles()) {
@@ -348,24 +430,45 @@ public class Devoxx extends Application {
         }
     }
 
-    private void setRoom(int roomNumber) {
-
-        String roomId;
-        if (roomNumber == 0) {
-            roomId = "aud_room";
-        } else {
-            roomId = "room" + roomNumber;
+    private void processRoom(int roomNumber) {
+              
+        if (controlProperties.isDevoxxUK() && 
+            (roomNumber == 0 || roomNumber > 6)) {
+            // Ignore invalid UK rooms, so it doesn't get saved to currentRoom.txt !! 
+            screenController.showDebugMsg("Invalid, select numbers from 1 - 6");              
+            return;
         }
+        
+        String roomId = "1";
+        
+        if (controlProperties.isDevoxxBelgium()) {
+            roomId = "room" + roomNumber;
+        } else if (controlProperties.isDevoxxUK()) {
+            switch(roomNumber) {
+                case 5 :    roomId = "a_gallery_hall";                
+                            break;
+                            
+                case 6 :    roomId = "aud_room";
+                            break;
+                            
+                default:    roomId = "room" + roomNumber;
+            }
+        }
+
+        // TODO How to force a screen refresh before we continue, different thread?
+        screenController.showDebugMsg("Fetching data room " + roomId);              
+        
+        writeRoomToSystem(roomId);
 
         screenController.setRoom(getRoomName(roomId));
 
         dataFetcher.clearAll();
-        
+
         dataFetcher.setRoomId(roomId);
-        
+
         currentPresentation = null;
-        
-        updateData();        
+
+        updateData();
     }
 
     /**
@@ -380,36 +483,37 @@ public class Devoxx extends Application {
         if (null != code) {
             switch (code) {
                 case DIGIT0:
-                    setRoom(0);
+                    processRoom(0);
                     break;
                 case DIGIT1:
-                    setRoom(1);
+                    processRoom(1);
                     break;
                 case DIGIT2:
-                    setRoom(2);
+                    processRoom(2);
                     break;
                 case DIGIT3:
-                    setRoom(3);
+                    processRoom(3);
                     break;
                 case DIGIT4:
-                    setRoom(4);
+                    processRoom(4);
                     break;
                 case DIGIT5:
-                    setRoom(5);
+                    processRoom(5);
                     break;
                 case DIGIT6:
-                    setRoom(6);
+                    processRoom(6);
                     break;
                 case DIGIT7:
-                    setRoom(7);
+                    processRoom(7);
                     break;
                 case DIGIT8:
-                    setRoom(8);
+                    processRoom(8);
                     break;
                 case DIGIT9:
-                    setRoom(9);
+                    processRoom(9);
                     break;
                 case Q:
+                    screenController.showDebugMsg("Quitting");
                     System.exit(0);
                 case UP:
                     controlProperties.incrementTestTime(FIVE_MINUTES);
@@ -428,12 +532,15 @@ public class Devoxx extends Application {
                     updateDisplay();
                     break;
                 case U:
+                    screenController.showDebugMsg("Update display");
                     updateDisplay();
                     break;
                 case D:
+                    screenController.showDebugMsg("Update data");
                     updateData();
                     break;
                 case R:
+                    screenController.showDebugMsg("Reloading data");
                     refreshImageCache();
                     updateData();
                     break;
@@ -446,6 +553,8 @@ public class Devoxx extends Application {
                     break;
             }
         }
+
+     //   screenController.hideDebug();
     }
 
     /**

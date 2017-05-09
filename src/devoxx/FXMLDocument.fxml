@@ -189,6 +189,13 @@
         </VBox>
       </children>
     </VBox>
+    <Rectangle fx:id="debugBox" arcHeight="5.0" arcWidth="5.0" fill="YELLOW" height="200.0" layoutX="280.0" layoutY="490.0" opacity="1.0" stroke="BLACK" strokeType="INSIDE" strokeWidth="0.0" width="1300.0">
+    </Rectangle>
+    <Label fx:id="debugLabel" layoutX="300.0" layoutY="500.0" text="CONSOLE TEXT">
+        <font>
+            <Font size="80.0" fx:id="x911" />
+        </font>
+    </Label>
       <Circle fx:id="networkCircle" fill="#ff1f1f" layoutX="1870.0" layoutY="1011.0" radius="10.0" stroke="BLACK" strokeType="INSIDE" />
       <Label fx:id="ipaddress" layoutX="1761.0" layoutY="1003.0" text="192.168.23.172" textAlignment="RIGHT" />
   </children>

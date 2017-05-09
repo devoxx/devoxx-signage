@@ -30,12 +30,16 @@ public class Speaker {
 
     private final static Logger LOGGER = Logger.getLogger(Speaker.class.getName());
 
-    public final String uuid;
-    public final String fullName;
+    public String uuid;
+    public String fullName;
     public String downloadURL;
     public Image photoImage;
-    private final String cache;
+    private String cache;
 
+    public Speaker() {
+    }
+
+    
     /**
      * Constructor
      *
